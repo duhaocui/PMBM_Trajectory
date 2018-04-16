@@ -1,5 +1,5 @@
 function [r_hat,x_hat,aout,cout,rout,xout,Pout,lout] = dataAssoc...
-    (aupd,cupd,rupd,xupd,Pupd,lupd,cnew,rnew,xnew,Pnew,lnew,anew,model)
+    (aupd,cupd,rupd,xupd,Pupd,lupd,anew,cnew,rnew,xnew,Pnew,lnew,model)
 
 Hpre = length(cupd);        % num of single target hypotheses updating pre-existing tracks
 Hnew = length(cnew);        % num of single target hypotheses updating new tracks

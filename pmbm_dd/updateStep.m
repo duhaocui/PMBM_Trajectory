@@ -1,5 +1,5 @@
 function [lambdau,xu,Pu,rupd,xupd,Pupd,lupd,cupd,aupd,rnew,xnew,Pnew,lnew,cnew,anew] = ...
-    updateStep(lambdau,xu,Pu,r,x,P,l,c,z,a,model,t)
+    updateStep(lambdau,xu,Pu,r,x,P,l,c,a,z,model,t)
 %UPDATE: CONSTRUCT COMPONENTS OF DISTRIBUTION UPDATED WITH MEASUREMENTS
 %Syntax: [lambdau,xu,Pu,wupd,rupd,xupd,Pupd,wnew,rnew,xnew,Pnew] =
 %          update(lambdau,xu,Pu,r,x,P,z,model)

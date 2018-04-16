@@ -53,11 +53,11 @@ for trial = 1:numMonteCarlo
         
         % Update all predicted single target hypotheses of previous scan
         [lambdau,xu,Pu,rupd,xupd,Pupd,lupd,cupd,aupd,rnew,xnew,Pnew,lnew,cnew,anew] = ...
-            updateStep(lambdau,xu,Pu,r,x,P,l,c,measlog{t},a,model,t);
+            updateStep(lambdau,xu,Pu,r,x,P,l,c,a,measlog{t},model,t);
         
         % multi-scan data association
         [r_hat,x_hat,a,c,r,x,P,l] = dataAssoc(aupd,cupd,rupd,xupd,Pupd,lupd,...
-            cnew,rnew,xnew,Pnew,lnew,anew,model);
+            anew,cnew,rnew,xnew,Pnew,lnew,model);
         
         % Target state extraction
         xest{t} = stateExtract(r_hat,x_hat);
