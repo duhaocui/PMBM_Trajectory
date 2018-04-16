@@ -60,11 +60,11 @@ P_G= 0.999;                              %gate size in percentage
 model.gamma= chi2inv(P_G,2);   %inv chi^2 dn gamma value
 
 % Initialise new target parameter structure
+model.lambdab = 0.05; % expect one new target to arrive every 20 scans on average
 model.xb = zeros(4,1);
 model.Pb = diag([100 1 100 1].^2);
 model.lambdau = 10; % initially expect 10 targets present (regardless of true number)
 volume = 200*200;
-model.lambdab = 0.05; % expect one new target to arrive every 20 scans on average
 model.lfai = lfai; % expected number of false alarms (integral of lambda_fa)
 model.lambda_fa = lfai/volume; % intensity = expected number / state space volume
 

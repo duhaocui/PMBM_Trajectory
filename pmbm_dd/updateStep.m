@@ -1,5 +1,5 @@
-function [lambdau,xu,Pu,rupd,xupd,Pupd,lupd,cupd,rnew,xnew,Pnew,lnew,cnew,aupd,anew] = ...
-    updateStep(lambdau,xu,Pu,r,x,P,l,c,z,a,model,t)
+function [unknownPPP,rupd,xupd,Pupd,lupd,cupd,rnew,xnew,Pnew,lnew,cnew,aupd,anew] = ...
+    updateStep(unknownPPP,r,x,P,l,c,a,model,z,t)
 %UPDATE: CONSTRUCT COMPONENTS OF DISTRIBUTION UPDATED WITH MEASUREMENTS
 %Syntax: [lambdau,xu,Pu,wupd,rupd,xupd,Pupd,wnew,rnew,xnew,Pnew] =
 %          update(lambdau,xu,Pu,r,x,P,z,model)
@@ -17,6 +17,10 @@ Pd = model.Pd;
 H = model.H;
 R = model.R;
 lambda_fa = model.lambda_fa;
+
+lambdau = unknownPPP.lambdau;
+xu = unknownPPP.xu;
+Pu = unknownPPP.Pu;
 
 % n: num of pre-existing tracks; num of new tracks = num of meas at current scan
 unique_a = unique(a,'stable');
@@ -189,4 +193,4 @@ cnew = cnew(idx_remain);
 anew = anew(idx_remain);
 
 % Update (i.e., thin) intensity of unknown targets
-lambdau = (1-Pd)*lambdau;
+unknownPPP.lambdau = (1-Pd)*lambdau;
