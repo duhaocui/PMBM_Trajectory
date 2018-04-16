@@ -25,20 +25,21 @@ est = cell(numMonteCarlo,1);
 % Generate truth
 for trial = 1:numMonteCarlo
     [model,measlog,xlog] = gentruth(Pd,lfai,numtruth,Pmid,simcasenum,slideWindow);
+    % Initialise filter parameters
+    stateDimensions = size(model.xb,1);
     % Multi-Bernoulli representation
-    trajectory = struct([]);
     n = 0;
     r = zeros(n,1);
-    x = zeros(4,n);
-    P = zeros(4,4,n);
+    x = zeros(stateDimensions,n);
+    P = zeros(stateDimensions,stateDimensions,n);
     l = cell(n,1);  % store trajectory
     c = zeros(n,1); % store the cost of each single target hypothesis
-    a = zeros(n,1); % store track index
+    a = zeros(n,1);
 
     % Unknown target PPP parameters
-    unknownPPP.lambdau = model.lambdab;
-    unknownPPP.xu = model.xb;
-    unknownPPP.Pu = model.Pb;
+    lambdau = model.lambdab;
+    xu = model.xb;
+    Pu = model.Pb;
     
     % Loop through time
     xest = cell(K,1);
@@ -48,15 +49,15 @@ for trial = 1:numMonteCarlo
     for t = 1:K 
 
         % Predict all single target hypotheses of previous scan
-        [r,x,P,unknownPPP] = predictStep(r,x,P,unknownPPP,model);
+        [r,x,P,lambdau,xu,Pu] = predictStep(r,x,P,lambdau,xu,Pu,model);
         
         % Update all predicted single target hypotheses of previous scan
-        [unknownPPP,rupd,xupd,Pupd,lupd,cupd,rnew,xnew,Pnew,lnew,cnew,aupd,anew] = ...
-            updateStep(unknownPPP,r,x,P,l,c,a,model,measlog{t},t);
+        [lambdau,xu,Pu,rupd,xupd,Pupd,lupd,cupd,aupd,rnew,xnew,Pnew,lnew,cnew,anew] = ...
+            updateStep(lambdau,xu,Pu,r,x,P,l,c,measlog{t},a,model,t);
         
         % multi-scan data association
-        [r_hat,x_hat,P_hat,l_hat,a_hat,r,x,P,l,c,a] = ...
-            dataAssoc(rupd,xupd,Pupd,lupd,cupd,aupd,rnew,xnew,Pnew,lnew,cnew,anew,model);
+        [r_hat,x_hat,a,c,r,x,P,l] = dataAssoc(aupd,cupd,rupd,xupd,Pupd,lupd,...
+            cnew,rnew,xnew,Pnew,lnew,anew,model);
         
         % Target state extraction
         xest{t} = stateExtract(r_hat,x_hat);

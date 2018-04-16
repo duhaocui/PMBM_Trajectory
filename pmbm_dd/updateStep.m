@@ -1,5 +1,5 @@
-function [unknownPPP,rupd,xupd,Pupd,lupd,cupd,rnew,xnew,Pnew,lnew,cnew,aupd,anew] = ...
-    updateStep(unknownPPP,r,x,P,l,c,a,model,z,t)
+function [lambdau,xu,Pu,rupd,xupd,Pupd,lupd,cupd,aupd,rnew,xnew,Pnew,lnew,cnew,anew] = ...
+    updateStep(lambdau,xu,Pu,r,x,P,l,c,z,a,model,t)
 %UPDATE: CONSTRUCT COMPONENTS OF DISTRIBUTION UPDATED WITH MEASUREMENTS
 %Syntax: [lambdau,xu,Pu,wupd,rupd,xupd,Pupd,wnew,rnew,xnew,Pnew] =
 %          update(lambdau,xu,Pu,r,x,P,z,model)
@@ -17,10 +17,6 @@ Pd = model.Pd;
 H = model.H;
 R = model.R;
 lambda_fa = model.lambda_fa;
-
-lambdau = unknownPPP.lambdau;
-xu = unknownPPP.xu;
-Pu = unknownPPP.Pu;
 
 % n: num of pre-existing tracks; num of new tracks = num of meas at current scan
 unique_a = unique(a,'stable');
@@ -127,7 +123,7 @@ aupd = aupd(idx_keep);
 
 % Allocate memory for new tracks, each new track contains two single target
 % hypothese
-wnew = zeros(2*m,1);
+cnew = zeros(2*m,1);
 rnew = zeros(2*m,1);
 xnew = zeros(stateDimensions,2*m);
 Pnew = zeros(stateDimensions,stateDimensions,2*m);
@@ -158,9 +154,9 @@ for j = 1:m
     C = sum(ck);
     % first single target hypothesis for measurement associated to previous
     % track, second for new track
-    wnew(2*j-1) = 1;
-    wnew(2*j) = C + lambda_fa;
-    rnew(2*j) = C/wnew(2*j);
+    cnew(2*j-1) = 0;
+    cnew(2*j) = log(C + lambda_fa);
+    rnew(2*j) = C/(C + lambda_fa);
     ck = ck/C;
     xnew(:,2*j) = yk*ck;
     for k = 1:nu
@@ -176,7 +172,6 @@ for j = 1:m
         anew(2*j-1:2*j) = aupd(end)+j;
     end
 end
-cnew = -log(wnew);
 
 len = length(cnew);
 idx_remain = true(len,1);
@@ -193,4 +188,4 @@ cnew = cnew(idx_remain);
 anew = anew(idx_remain);
 
 % Update (i.e., thin) intensity of unknown targets
-unknownPPP.lambdau = (1-Pd)*lambdau;
+lambdau = (1-Pd)*lambdau;
