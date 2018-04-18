@@ -1,4 +1,4 @@
-function [r,x,P,lambdau,xu,Pu] = predictStep(r,x,P,lambdau,xu,Pu,model)
+function [r,x,P,unknownPPP] = predictStep(r,x,P,unknownPPP,model)
 %PREDICT: PREDICT MULTI-BERNOULLI AND POISSON COMPONENTS
 %Syntax: [r,x,P] = tomb(pupd,rupd,xupd,Pupd,pnew,rnew,xnew,Pnew)
 %Input:
@@ -37,6 +37,10 @@ xb = model.xb;
 Pb = model.Pb;
 lambdab_threshold = model.threshold;
 
+lambdau = unknownPPP.lambdau;
+xu = unknownPPP.xu;
+Pu = unknownPPP.Pu;
+
 % Interpret length of inputs
 n = length(r);
 nu = length(lambdau);
@@ -71,7 +75,7 @@ end
 
 % Not shown in paper--truncate low weight components
 ss = lambdau > lambdab_threshold;
-lambdau = lambdau(ss);
-xu = xu(:,ss);
-Pu = Pu(:,:,ss);
+unknownPPP.lambdau = lambdau(ss);
+unknownPPP.xu = xu(:,ss);
+unknownPPP.Pu = Pu(:,:,ss);
 

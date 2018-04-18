@@ -1,5 +1,5 @@
-function [r_hat,x_hat,aout,cout,rout,xout,Pout,lout] = dataAssoc...
-    (aupd,cupd,rupd,xupd,Pupd,lupd,anew,cnew,rnew,xnew,Pnew,lnew,model)
+function [r_hat,x_hat,P_hat,l_hat,a_hat,rout,xout,Pout,lout,cout,aout] = dataAssoc...
+    (rupd,xupd,Pupd,lupd,cupd,aupd,rnew,xnew,Pnew,lnew,cnew,anew,model)
 
 Hpre = length(cupd);        % num of single target hypotheses updating pre-existing tracks
 Hnew = length(cnew);        % num of single target hypotheses updating new tracks
@@ -10,6 +10,9 @@ mcur = Hnew/2;              % num of measurements in current scan
 if Hpre == 0
     r_hat = rnew;
     x_hat = xnew;
+    P_hat = Pnew;
+    l_hat = lnew;
+    a_hat = anew;
     rout = rnew;
     xout = xnew;
     Pout = Pnew;
@@ -371,6 +374,8 @@ u = uprimal;
 I = u(1:Hpre)==1;
 r_hat = rupd(I);
 x_hat = xupd(:,I);
+P_hat = Pupd(:,:,I);
+a_hat = aupd(I);
 l = lupd(I);
 c = cupd(I);
 
@@ -379,6 +384,9 @@ c = cupd(I);
 Inew = u(Hpre+1:H)==1;
 r_hat = [r_hat;rnew(Inew)];
 x_hat = [x_hat xnew(:,Inew)];
+P_hat = cat(3,P_hat,Pnew(:,:,Inew));
+a_hat = [a_hat;anew(Inew)];
+l_hat = [l;lnew(Inew)];
 
 % N-scan pruning
 idx = 0;
