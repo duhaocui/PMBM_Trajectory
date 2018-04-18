@@ -2,8 +2,8 @@
 dbstop if error
 
 Pd = 0.9;
-lfai = 10;
-slideWindow = 3;
+lfai = 30;
+slideWindow = 5;
 
 numMonteCarlo = 100;
 K = 101; % time steps in total
@@ -26,14 +26,15 @@ est = cell(numMonteCarlo,1);
 for trial = 1:numMonteCarlo
     [model,measlog,xlog] = gentruth(Pd,lfai,numtruth,Pmid,simcasenum,slideWindow);
     % Multi-Bernoulli representation
-    trajectory = struct([]);
     n = 0;
-    r = zeros(n,1);
-    x = zeros(4,n);
-    P = zeros(4,4,n);
-    l = cell(n,1);  % store trajectory
-    c = zeros(n,1); % store the cost of each single target hypothesis
-    a = zeros(n,1); % store track index
+    trajectoryMBM = struct('r',zeros(n,1),'x',zeros(4,n),'P',zeros(4,4,n),...
+        'l',cell(n,1),'c',zeros(n,1),'a',zeros(n,1));
+%     r = zeros(n,1);
+%     x = zeros(4,n);
+%     P = zeros(4,4,n);
+%     l = cell(n,1);  % store trajectory
+%     c = zeros(n,1); % store the cost of each single target hypothesis
+%     a = zeros(n,1); % store track index
 
     % Unknown target PPP parameters
     unknownPPP.lambdau = model.lambdab;
@@ -48,18 +49,17 @@ for trial = 1:numMonteCarlo
     for t = 1:K 
 
         % Predict all single target hypotheses of previous scan
-        [r,x,P,unknownPPP] = predictStep(r,x,P,unknownPPP,model);
+        [trajectoryMBM,unknownPPP] = predictStep2(trajectoryMBM,unknownPPP,model);
         
         % Update all predicted single target hypotheses of previous scan
-        [unknownPPP,rupd,xupd,Pupd,lupd,cupd,rnew,xnew,Pnew,lnew,cnew,aupd,anew] = ...
-            updateStep(unknownPPP,r,x,P,l,c,a,model,measlog{t},t);
+        [unknownPPP,trajectoryUpdMBM,trajectoryNewMBM] = ...
+            updateStep2(unknownPPP,trajectoryMBM,model,measlog{t},t);
         
         % multi-scan data association
-        [r_hat,x_hat,P_hat,l_hat,a_hat,r,x,P,l,c,a] = ...
-            dataAssoc(rupd,xupd,Pupd,lupd,cupd,aupd,rnew,xnew,Pnew,lnew,cnew,anew,model);
+        [trajectoryEst,trajectoryMBM] = dataAssoc2(trajectoryUpdMBM,trajectoryNewMBM,model);
         
         % Target state extraction
-        xest{t} = stateExtract(r_hat,x_hat);
+        xest{t} = stateExtract2(trajectoryEst);
        
         % Performance evaluation using GOSPA metric
         gospa_vals(t,:,trial) = gospa_dist(get_comps(xlog{t},[1 3]),...

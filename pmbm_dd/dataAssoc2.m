@@ -1,25 +1,20 @@
-function [r_hat,x_hat,rout,xout,Pout,lout,cout,aout] = dataAssoc...
-    (rupd,xupd,Pupd,lupd,cupd,aupd,rnew,xnew,Pnew,lnew,cnew,anew,model)
+function [trajectoryEst,trajectoryOutMBM] = dataAssoc2...
+    (trajectoryUpdMBM,trajectoryNewMBM,model)
 
-Hpre = length(cupd);        % num of single target hypotheses updating pre-existing tracks
-Hnew = length(cnew);        % num of single target hypotheses updating new tracks
+Hpre = length(trajectoryUpdMBM);        % num of single target hypotheses updating pre-existing tracks
+Hnew = length(trajectoryNewMBM);        % num of single target hypotheses updating new tracks
 H = Hpre+Hnew;              % total num of single target hypotheses
 mcur = Hnew/2;              % num of measurements in current scan
 
 % If there is no pre-existing track
 if Hpre == 0
-    r_hat = rnew;
-    x_hat = xnew;
-    rout = rnew;
-    xout = xnew;
-    Pout = Pnew;
-    lout = lnew;
-    cout = cnew;
-    aout = anew;
+    trajectoryEst = trajectoryNewMBM;
+    trajectoryOutMBM = trajectoryNewMBM;
     return;
 end
 
 % n: num of pre-existing tracks; num of new tracks = num of meas at current scan
+aupd = extractfield(trajectoryUpdMBM,'a');
 unique_a = unique(aupd,'stable');
 npre = length(unique_a);
 % number of single target hypotheses in pre-exist track i, i belongs {1,...,npre}
@@ -30,9 +25,14 @@ end
 
 % calculate the length of trajectory of each single target hypothesis in
 % pre-existing tracks, used for determine the num of scans should be used
-tralen = cellfun(@(x) size(x,1),lupd);
+tralen = zeros(Hpre,1);
+for i = 1:Hpre
+    tralen(i) = size(trajectoryUpdMBM(i).l,1);
+end
 
 % cost of single target hypotheses
+cupd = extractfield(trajectoryUpdMBM,'c')';
+cnew = extractfield(trajectoryNewMBM,'c')';
 c = [cupd;cnew];
 c = c - min(c(:));
 
@@ -59,6 +59,16 @@ tratemp = cell(maxtralen,1);
 % construct binary indicator matrix for constraint (2): each measurement in
 % each scan should only be used once
 % target trajectory of the current scan
+lupd = cell(Hpre,1);
+for i = 1:Hpre
+    lupd{i} = trajectoryUpdMBM(i).l;
+end
+lnew = cell(Hnew,1);
+for i = 1:Hnew
+    lnew{i} = trajectoryNewMBM(i).l;
+end
+
+
 tratemp{1} = cellfun(@(x) x(end,2),lupd);
 tcur = [tratemp{1};cellfun(@(x) x(1,2),lnew)];
 At = false(mcur,H);
@@ -78,7 +88,6 @@ b = cell(maxtralen,1);
 
 A{1} = At;
 b{1} = bt;
-% Htl(1) = H;
 
 for tl = 2:maxtralen
     % get number of single target hypotheses existed at current-tl+1 scan
@@ -369,29 +378,20 @@ u = uprimal;
 % single target hypotheses in the ML global association hypotheses updating
 % pre-existing tracks
 I = u(1:Hpre)==1;
-r_hat = rupd(I);
-x_hat = xupd(:,I);
-l_hat = lupd(I);
-c = cupd(I);
-
-% single target hypotheses in the ML global association hypotheses
-% updating new tracks
-Inew = u(Hpre+1:H)==1;
-r_hat = [r_hat;rnew(Inew)];
-x_hat = [x_hat xnew(:,Inew)];
+trajectoryEst = trajectoryUpdMBM(I);
 
 % N-scan pruning
 idx = 0;
 idx_remain = false(Hpre,1);
 nc = 1; % prune null-hypothesis with length no less than nc
-for i = 1:size(l_hat,1)
-    if (size(l_hat{i},1)>=nc && ns(i)==1 && isequal(l_hat{i}(end-nc+1:end,2),zeros(nc,1)))
+for i = 1:size(trajectoryEst,1)
+    if (size(trajectoryEst(i).l,1)>=nc && ns(i)==1 && isequal(trajectoryEst(i).l(end-nc+1:end,2),zeros(nc,1)))
         % prune null-hypothesis
     else
-        if size(l_hat{i},1)>=slideWindow
-            traCompared = l_hat{i}(1:end-slideWindow+1,2);
+        if size(trajectoryEst(i).l,1)>=slideWindow
+            traCompared = trajectoryEst(i).l(1:end-slideWindow+1,2);
             for j = idx+1:idx+ns(i)
-                if isequal(lupd{j}(1:end-slideWindow+1,2),traCompared)
+                if isequal(trajectoryUpdMBM(j).l(1:end-slideWindow+1,2),traCompared)
                     idx_remain(j) = true;
                 end
             end
@@ -402,16 +402,12 @@ for i = 1:size(l_hat,1)
     idx = idx+ns(i);
 end
 
-rupd = rupd(idx_remain);
-xupd = xupd(:,idx_remain);
-Pupd = Pupd(:,:,idx_remain);
-lupd = lupd(idx_remain);
-cupd = cupd(idx_remain);
-aupd = aupd(idx_remain);
+trajectoryUpdMBM = trajectoryUpdMBM(idx_remain);
 
 % Find single target hypotheses with existence probability smaller than a
 Aupd = At(:,1:Hpre);
 Aupd = Aupd(:,idx_remain);
+rupd = extractfield(trajectoryUpdMBM,'r')';
 idx_smallExistenceProb = rupd<model.threshold&rupd>0;
 idx_measSmallExistenceProb = sum(Aupd(:,idx_smallExistenceProb),2)>=1;
 idx_highExistenceProb = rupd>=model.threshold;
@@ -420,19 +416,13 @@ indicator = (idx_measSmallExistenceProb-idx_measHighExistenceProb)==1;
 len = size(Aupd,2);
 idx_remain = true(len,1);
 idx_remain(sum(Aupd.*indicator)>0) = false;
-
-% idx_remain = ~idx_smallExistenceProb;
-rupd = rupd(idx_remain);
-xupd = xupd(:,idx_remain);
-Pupd = Pupd(:,:,idx_remain);
-lupd = lupd(idx_remain);
-cupd = cupd(idx_remain);
-aupd = aupd(idx_remain);
+trajectoryUpdMBM = trajectoryUpdMBM(idx_remain);
 
 % if a track contains too many single target hypothesis, crop it, we should
 % prune single target hypothesis with score larger than the one in the ML
 % estimation to keep the total number with in a largest allowed threshold.
 % Aupd = Aupd(:,idx_remain);
+aupd = extractfield(trajectoryUpdMBM,'a')';
 unique_a = unique(aupd,'stable');
 npre = length(unique_a);
 % number of single target hypotheses in pre-exist track i, i belongs {1,...,npre}
@@ -442,12 +432,13 @@ for i = 1:npre
 end
 maxNumHypoperTrack = (slideWindow-1)*10;
 idx = 0;
-idxtobePrune = false(length(cupd),1);
+idxtobePrune = false(length(trajectoryUpdMBM),1);
+cupd = extractfield(trajectoryUpdMBM,'c')';
 for i = 1:npre
     if ns(i) > maxNumHypoperTrack
         [~,idxSort] = sort(cupd(idx+1:idx+ns(i)));
         idxtobePrune(idxSort(maxNumHypoperTrack+1:end)+idx) = true;
-        idxtobePrune(find(cupd(idx+1:idx+ns(i))==c(i))+idx) = false;
+        idxtobePrune(find(cupd(idx+1:idx+ns(i))==trajectoryEst(i).c)+idx) = false;
     end
     idx = idx + ns(i);
 end
@@ -471,36 +462,12 @@ for i = 1:npre
 end
 
 idx_remain = ~idxtobePrune;
-rupd = rupd(idx_remain);
-xupd = xupd(:,idx_remain);
-Pupd = Pupd(:,:,idx_remain);
-lupd = lupd(idx_remain);
-cupd = cupd(idx_remain);
-aupd = aupd(idx_remain);
+trajectoryUpdMBM = trajectoryUpdMBM(idx_remain);
 
-%
-idx_smallExistenceProb = rnew<model.threshold&rnew>0;
-idx_measSmallExistenceProb = cell2mat(lnew(idx_smallExistenceProb));
-if ~isempty(idx_measSmallExistenceProb)
-    idx_measSmallExistenceProb = idx_measSmallExistenceProb(:,2);
-end
-idx_meas = cellfun(@(x) x(end,2),lupd);
-idx_measPrune = ~ismember(idx_measSmallExistenceProb,idx_meas);
-measPrune = idx_measSmallExistenceProb(idx_measPrune);
-temp = cell2mat(lnew);
-idx_remain = ~ismember(temp(:,2),measPrune);
-lnew = lnew(idx_remain);
-anew = anew(idx_remain);
-cnew = cnew(idx_remain);
-rnew = rnew(idx_remain);
-xnew = xnew(:,idx_remain);
-Pnew = Pnew(:,:,idx_remain);
-
-rout = [rupd;rnew];
-xout = [xupd xnew];
-Pout = cat(3,Pupd,Pnew);
-lout = cat(1,lupd,lnew);
-cout = [cupd;cnew];
-aout = [aupd;anew];
+% single target hypotheses in the ML global association hypotheses
+% updating new tracks
+Inew = u(Hpre+1:H)==1;
+trajectoryEst = [trajectoryEst;trajectoryNewMBM(Inew)];
+trajectoryOutMBM = [trajectoryUpdMBM;trajectoryNewMBM];
 
 end
