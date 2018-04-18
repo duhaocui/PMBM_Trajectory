@@ -3,7 +3,7 @@ dbstop if error
 
 Pd = 0.9;
 lfai = 30;
-slideWindow = 5;
+slideWindow = 4;
 
 numMonteCarlo = 100;
 K = 101; % time steps in total

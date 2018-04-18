@@ -59,18 +59,9 @@ tratemp = cell(maxtralen,1);
 % construct binary indicator matrix for constraint (2): each measurement in
 % each scan should only be used once
 % target trajectory of the current scan
-lupd = cell(Hpre,1);
-for i = 1:Hpre
-    lupd{i} = trajectoryUpdMBM(i).l;
-end
-lnew = cell(Hnew,1);
-for i = 1:Hnew
-    lnew{i} = trajectoryNewMBM(i).l;
-end
+tratemp{1} = arrayfun(@(x) x.l(end,2),trajectoryUpdMBM);
+tcur = [tratemp{1};arrayfun(@(x) x.l(2),trajectoryNewMBM)];
 
-
-tratemp{1} = cellfun(@(x) x(end,2),lupd);
-tcur = [tratemp{1};cellfun(@(x) x(1,2),lnew)];
 At = false(mcur,H);
 for i = 1:mcur
     At(i,tcur==i) = true;
@@ -94,8 +85,8 @@ for tl = 2:maxtralen
     idx = find(tralen>=tl);
     Htemp = length(idx);
     % target trajectory of the current-tl+1 scan, tracks from left to
-    % right, old to new
-    tratemp{tl} = cellfun(@(x) x(end-tl+1,2),lupd(idx));
+    % right, old to new    
+    tratemp{tl} = arrayfun(@(x) x.l(end-tl+1,2),trajectoryUpdMBM(idx));
     % num of measurements in current-tl+1 scan, do not count missed detection and
     % non-exist new track
     measUnique = unique(tratemp{tl}(tratemp{tl}~=0),'stable');
@@ -151,12 +142,10 @@ for tl = 1:maxtralen
             idx = idx+ns(i);
         end
     end
-end
-
-for tl = 1:maxtralen
+    
     idx = 0;
     for i = 1:npre
-        if  size(lupd{idx+1},1) >= tl+1
+        if  size(trajectoryUpdMBM(idx+1).l,1) >= tl+1
             tratl{tl}{i} = tratemp{tl}(idx+1:idx+ns(i));
             missornull{tl}{i} = find(tratl{tl}{i}==0);
         end
@@ -253,7 +242,7 @@ while (numIteration<maxIteration&&numRepetition<1)
                 idx = 0;
                 for i = 1:npre
                     if ~any(utemp(idx+1:idx+ns(i)))
-                        if size(lupd{idx+1},1) >= tl+1
+                        if size(trajectoryUpdMBM(idx+1).l,1) >= tl+1
                             [~,idxtratl] = min(c_hat(missornull{tl}{i}+idx));
                             utemp(idx+missornull{tl}{i}(idxtratl)) = true;
                         else
