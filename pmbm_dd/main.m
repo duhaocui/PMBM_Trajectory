@@ -29,12 +29,12 @@ for trial = 1:numMonteCarlo
     n = 0;
     trajectoryMBM = struct('r',zeros(n,1),'x',zeros(4,n),'P',zeros(4,4,n),...
         'l',cell(n,1),'c',zeros(n,1),'a',zeros(n,1));
-%     r = zeros(n,1);
-%     x = zeros(4,n);
-%     P = zeros(4,4,n);
-%     l = cell(n,1);  % store trajectory
-%     c = zeros(n,1); % store the cost of each single target hypothesis
-%     a = zeros(n,1); % store track index
+%     r = existence probability;
+%     x = trajectory (target states across time);
+%     P = covariance;
+%     l : trajectory (measurement indices across time)
+%     c : the cost of each single target hypothesis
+%     a : track index
 
     % Unknown target PPP parameters
     unknownPPP.lambdau = model.lambdab;
@@ -49,17 +49,17 @@ for trial = 1:numMonteCarlo
     for t = 1:K 
 
         % Predict all single target hypotheses of previous scan
-        [trajectoryMBM,unknownPPP] = predictStep2(trajectoryMBM,unknownPPP,model);
+        [trajectoryMBM,unknownPPP] = predictStep(trajectoryMBM,unknownPPP,model);
         
         % Update all predicted single target hypotheses of previous scan
         [unknownPPP,trajectoryUpdMBM,trajectoryNewMBM] = ...
-            updateStep2(unknownPPP,trajectoryMBM,model,measlog{t},t);
+            updateStep(unknownPPP,trajectoryMBM,model,measlog{t},t);
         
         % multi-scan data association
-        [trajectoryEst,trajectoryMBM] = dataAssoc2(trajectoryUpdMBM,trajectoryNewMBM,model);
+        [trajectoryEst,trajectoryMBM] = dataAssoc(trajectoryUpdMBM,trajectoryNewMBM,model);
         
         % Target state extraction
-        xest{t} = stateExtract2(trajectoryEst);
+        xest{t} = stateExtract(trajectoryEst);
        
         % Performance evaluation using GOSPA metric
         gospa_vals(t,:,trial) = gospa_dist(get_comps(xlog{t},[1 3]),...
