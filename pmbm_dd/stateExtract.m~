@@ -1,4 +1,4 @@
-function [est,multiTrajectories] = stateExtract(trajectoryEst)
+function est = stateExtract(trajectoryEst)
 % Extract target states
 
 % MAP cardinality estimate
@@ -13,12 +13,11 @@ ss(o(1:n)) = true;
 trajectoryEst = trajectoryEst(ss);
 len = length(trajectoryEst);
 est = zeros(4,len);
-multiTrajectories = cell(len,1);
 for i = 1:len
-    est(:,i) = trajectoryEst(i).x(:,end);
-    multiTrajectories{i} = trajectoryEst(i).x;
+    est(:,i) = trajectoryEst(i).x;
 end
 
+mu
 
 end
 

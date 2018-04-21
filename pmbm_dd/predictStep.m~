@@ -27,12 +27,11 @@ nu = length(lambdau);
 for i = 1:n
     if trajectoryMBM(i).r~=0
         trajectoryMBM(i).r = Ps*trajectoryMBM(i).r;
-%         trajectoryMBM(i).x = F*trajectoryMBM(i).x;
-%         trajectoryMBM(i).P = F*trajectoryMBM(i).P*F' + Q;
+        trajectoryMBM(i).x = F*trajectoryMBM(i).x;
+        trajectoryMBM(i).P = F*trajectoryMBM(i).P*F' + Q;
         
         % trajectory case
-        trajectoryMBM(i).x = [trajectoryMBM(i).x F*trajectoryMBM(i).x(:,end)];
-        trajectoryMBM(i).P = cat(3,trajectoryMBM(i).P,F*trajectoryMBM(i).P(:,:,end)*F' + Q);
+        trajectoryMBM(i).x = [trajectoryMBM(i).x F*trajectoryMBM(i).x]
     end
 end
 

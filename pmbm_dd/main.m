@@ -43,6 +43,7 @@ for trial = 1:numMonteCarlo
     
     % Loop through time
     xest = cell(K,1);
+    stateTrajectory = cell(K,1);
     tra = cell(K,1);
     trackIndex = cell(K,1);
     
@@ -59,7 +60,7 @@ for trial = 1:numMonteCarlo
         [trajectoryEst,trajectoryMBM] = dataAssoc(trajectoryUpdMBM,trajectoryNewMBM,model);
         
         % Target state extraction
-        xest{t} = stateExtract(trajectoryEst);
+        [xest{t},stateTrajectory{t}] = stateExtract(trajectoryEst);
        
         % Performance evaluation using GOSPA metric
         gospa_vals(t,:,trial) = gospa_dist(get_comps(xlog{t},[1 3]),...

@@ -43,7 +43,7 @@ for i = 1:n
         trajectoryUpdMBM(iupd).c = 0;
         trajectoryUpdMBM(iupd).r = 0;
         trajectoryUpdMBM(iupd).x = zeros(4,1);
-        trajectoryUpdMBM(iupd).P = zeros(4,4,1);
+        trajectoryUpdMBM(iupd).P = zeros(4,4);
         trajectoryUpdMBM(iupd).l = [trajectoryMBM(i).l;[t,0]];
         trajectoryUpdMBM(iupd).a = trajectoryMBM(i).a;
     else
@@ -58,15 +58,15 @@ for i = 1:n
         trajectoryUpdMBM(iupd).l = [trajectoryMBM(i).l;[t,0]];
         trajectoryUpdMBM(iupd).a = trajectoryMBM(i).a;
         
-        if trajectoryMBM(i).r >= 1e-4
+        if trajectoryMBM(i).r >= model.threshold
         % Create hypotheses with measurement updates
-        S = H*trajectoryMBM(i).P*H' + R;
+        S = H*trajectoryMBM(i).P(:,:,end)*H' + R;
         sqrt_det2piS = sqrt(det(2*pi*S));
-        K = trajectoryMBM(i).P*H'/S;
-        Pplus = trajectoryMBM(i).P - K*H*trajectoryMBM(i).P;
+        K = trajectoryMBM(i).P(:,:,end)*H'/S;
+        Pplus = trajectoryMBM(i).P(:,:,end) - K*H*trajectoryMBM(i).P(:,:,end);
         for j = 1:m
             iupd = iupd+1;
-            v = z(:,j) - H*trajectoryMBM(i).x;
+            v = z(:,j) - H*trajectoryMBM(i).x(:,end);
             temp = exp(-0.5*v'/S*v)/sqrt_det2piS; % temp < 0.0026
             if temp < 0.0005 % 3-sigma gating
                 insideGating(iupd) = false;
@@ -74,8 +74,10 @@ for i = 1:n
                 usedMeas(j) = true;
                 trajectoryUpdMBM(iupd).c = trajectoryMBM(i).c-log(trajectoryMBM(i).r*Pd*temp);
                 trajectoryUpdMBM(iupd).r = 1;
-                trajectoryUpdMBM(iupd).x = trajectoryMBM(i).x + K*v;
-                trajectoryUpdMBM(iupd).P = Pplus;
+                trajectoryUpdMBM(iupd).x = trajectoryMBM(i).x;
+                trajectoryUpdMBM(iupd).x(:,end) = trajectoryMBM(i).x(:,end) + K*v;
+                trajectoryUpdMBM(iupd).P = trajectoryMBM(i).P;
+                trajectoryUpdMBM(iupd).P(:,:,end) = Pplus;
                 % Otherwise, add the index of the measurement at current scan
                 trajectoryUpdMBM(iupd).l = [trajectoryMBM(i).l;[t,j]];
                 trajectoryUpdMBM(iupd).a = trajectoryMBM(i).a;
