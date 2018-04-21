@@ -1,29 +1,5 @@
-function [r,x,P,unknownPPP] = predictStep(r,x,P,unknownPPP,model)
+function [trajectoryMBM,unknownPPP] = predictStep(trajectoryMBM,unknownPPP,model)
 %PREDICT: PREDICT MULTI-BERNOULLI AND POISSON COMPONENTS
-%Syntax: [r,x,P] = tomb(pupd,rupd,xupd,Pupd,pnew,rnew,xnew,Pnew)
-%Input:
-% r(i), x(:,i) and P(:,:,i) give the probability of existence, state
-%  estimate and covariance for the i-th multi-Bernoulli component (track)
-% lambdau(k), xu(:,k) and Pu(:,:,k) give the intensity, state estimate and
-%  covariance for the k-th mixture component of the unknown target Poisson
-%  Point Process (PPP)
-%model is structure describing target birth and transition models
-%Output:
-% Predicted components in same format as input
-%Software implements pseudocode described in http://arxiv.org/abs/1203.2995
-% (accepted for publication, IEEE Transactions on Aerospace and Electronic
-% Systems)
-%Copyright 2012 Defence Science and Technology Organisation
-%Note:
-% As this software is provided free charge and to the full extent permitted
-% by applicable law the software is provided "as is" and DSTO and any
-% copyright holder in material included in the software make no
-% representation and gives no warranty of any kind, either expressed or
-% implied, including, but not limited to, implied warranties of
-% merchantability, fitness for a particular purpose, non-infringement, or
-% the presence or absence of defects or errors, whether discoverable or
-% not. The entire risk as to the quality and performance of the software is
-% with you.
 
 % Get multi-Bernoulli prediction parameters from model
 F = model.F;
@@ -42,16 +18,18 @@ xu = unknownPPP.xu;
 Pu = unknownPPP.Pu;
 
 % Interpret length of inputs
-n = length(r);
+n = length(trajectoryMBM);
 nu = length(lambdau);
 
 % Implement prediction algorithm
 
 % Predict existing tracks (single target hypotheses)
 for i = 1:n
-    r(i) = Ps*r(i);
-    x(:,i) = F*x(:,i);
-    P(:,:,i) = F*P(:,:,i)*F' + Q;
+    if trajectoryMBM(i).r~=0
+        trajectoryMBM(i).r = Ps*trajectoryMBM(i).r;
+        trajectoryMBM(i).x = F*trajectoryMBM(i).x;
+        trajectoryMBM(i).P = F*trajectoryMBM(i).P*F' + Q;
+    end
 end
 
 % Predict existing PPP intensity
